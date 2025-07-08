@@ -1,0 +1,17 @@
+{
+  "transaction_type": "OUT",
+  "customer_name": "John Doe",
+  "notes": "Penjualan ke pelanggan",
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 2,
+      "price_per_unit": 9500000
+    },
+    {
+      "product_id": 2,
+      "quantity": 1,
+      "price_per_unit": 200000
+    }
+  ]
+}
