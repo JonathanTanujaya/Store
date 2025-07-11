@@ -1,0 +1,110 @@
+.sidebar-container {
+    width: 256px; /* w-64 */
+    background-color: #ffffff; /* bg-white */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+    position: relative; /* For resizer positioning */
+    overflow: hidden; /* Hide content that overflows during resize */
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack items vertically */
+}
+
+.sidebar-header {
+    padding: 1rem; /* p-4 */
+}
+
+.app-title-container {
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+.sidebar-header h1 {
+    font-size: 1.8rem; /* Larger font size for the title */
+    font-weight: 800; /* Extra bold */
+    background: linear-gradient(45deg, #007bff, #00c6ff); /* Blue gradient */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    margin: 0; /* Remove default margin */
+    line-height: 1.2; /* Adjust line height */
+}
+
+.sidebar-nav {
+    margin-top: 1.25rem; /* mt-5 */
+    flex-grow: 1; /* Allow nav to take available space */
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem; /* px-4 py-2 */
+    color: #4b5563; /* text-gray-700 */
+    text-decoration: none;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.sidebar-nav-item:hover {
+    background-color: #e5e7eb; /* hover:bg-gray-200 */
+}
+
+.sidebar-icon {
+    width: 20px; /* w-5 */
+    height: 20px; /* h-5 */
+    margin-right: 1rem; /* mx-4 */
+}
+
+.notification-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: red;
+    border-radius: 50%;
+    margin-left: 5px;
+}
+
+.sidebar-zoom-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    gap: 0.5rem;
+    border-top: 1px solid #e5e7eb;
+    margin-top: auto; /* Push to bottom */
+}
+
+.zoom-button {
+    background-color: #3B82F6;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.zoom-button:hover {
+    background-color: #2563eb;
+}
+
+.zoom-level {
+    font-size: 0.9rem;
+    color: #4b5563;
+    min-width: 40px;
+    text-align: center;
+}
+
+.sidebar-resizer {
+    width: 8px;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+    cursor: ew-resize;
+    background-color: rgba(0, 0, 0, 0.1); /* Make it slightly visible */
+    transition: background-color 0.2s ease-in-out;
+}
+
+.sidebar-resizer:hover {
+    background-color: rgba(0, 0, 0, 0.2); /* Darker on hover */
+}

@@ -1,84 +1,112 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
+const pool = require('../config/db');
 
-// GET all transactions
+// Get all transactions
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT t.*, 
-             COALESCE(array_agg(
-               json_build_object(
-                 'id', ti.id,
-                 'product_id', ti.product_id,
-                 'product_name', p.name,
-                 'quantity', ti.quantity,
-                 'price_per_unit', ti.price_per_unit,
-                 'subtotal', ti.subtotal
-               )
-             ) FILTER (WHERE ti.id IS NOT NULL), '{}') as items
-      FROM transactions t
-      LEFT JOIN transaction_items ti ON t.id = ti.transaction_id
-      LEFT JOIN products p ON ti.product_id = p.id
-      GROUP BY t.id
-      ORDER BY t.transaction_date DESC
-    `);
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const allTransactions = await pool.query('SELECT * FROM transactions ORDER BY transaction_date DESC');
+    res.json(allTransactions.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
   }
 });
 
-// POST new transaction
+// Add a new transaction (multi-item support)
 router.post('/', async (req, res) => {
   const client = await pool.connect();
-  
   try {
-    await client.query('BEGIN');
-    
-    const { transaction_type, customer_name, items, notes } = req.body;
-    
-    // Insert transaction
-    const transactionResult = await client.query(
-      'INSERT INTO transactions (transaction_type, customer_name, notes) VALUES ($1, $2, $3) RETURNING *',
-      [transaction_type, customer_name, notes]
-    );
-    
-    const transaction = transactionResult.rows[0];
+    const { transaction_type, customer_name, items } = req.body;
     let total_amount = 0;
-    
-    // Insert transaction items and update stock
+    let total_profit = 0;
+
+    await client.query('BEGIN');
+
+    // 1. Insert into transactions table
+    const newTransaction = await client.query(
+      'INSERT INTO transactions (transaction_type, customer_name) VALUES($1, $2) RETURNING * ',
+      [transaction_type, customer_name]
+    );
+    const transactionId = newTransaction.rows[0].transaction_id;
+
+    // 2. Process each item in the transaction
     for (const item of items) {
-      const { product_id, quantity, price_per_unit } = item;
-      const subtotal = quantity * price_per_unit;
-      total_amount += subtotal;
-      
-      // Insert transaction item
+      const { product_id, quantity } = item;
+
+      // Get product details (price, stock, etc.)
+      const product = await client.query('SELECT * FROM products WHERE id = $1', [product_id]);
+      if (product.rows.length === 0) {
+        throw new Error(`Product with ID ${product_id} not found.`);
+      }
+      const { stock_quantity, selling_price, purchase_price } = product.rows[0];
+
+      // Check stock for 'OUT' transactions
+      if (transaction_type === 'OUT' && stock_quantity < quantity) {
+        throw new Error(`Insufficient stock for product ${product.rows[0].name}. Available: ${stock_quantity}, Requested: ${quantity}`);
+      }
+
+      // Calculate item profit and amount
+      const itemProfit = (selling_price - purchase_price) * quantity;
+      const itemAmount = selling_price * quantity;
+
+      total_amount += itemAmount;
+      total_profit += itemProfit;
+
+      // Insert into transaction_items table
       await client.query(
-        'INSERT INTO transaction_items (transaction_id, product_id, quantity, price_per_unit, subtotal) VALUES ($1, $2, $3, $4, $5)',
-        [transaction.id, product_id, quantity, price_per_unit, subtotal]
+        'INSERT INTO transaction_items (transaction_id, product_id, quantity, price_at_transaction, purchase_price_at_transaction, item_profit) VALUES($1, $2, $3, $4, $5, $6)',
+        [transactionId, product_id, quantity, selling_price, purchase_price, itemProfit]
       );
-      
-      // Update stock
-      const stockChange = transaction_type === 'IN' ? quantity : -quantity;
+
+      // Update product stock
+      const newStockQuantity = transaction_type === 'IN' ? stock_quantity + quantity : stock_quantity - quantity;
+      await client.query('UPDATE products SET stock_quantity = $1 WHERE id = $2', [newStockQuantity, product_id]);
+
+      // Insert into stock_history
       await client.query(
-        'UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2',
-        [stockChange, product_id]
+        'INSERT INTO stock_history (product_id, change_type, quantity_change, new_stock, transaction_id) VALUES($1, $2, $3, $4, $5)',
+        [product_id, transaction_type, quantity, newStockQuantity, transactionId]
       );
     }
-    
-    // Update transaction total
+
+    // 3. Update total_amount and total_profit in transactions table
     await client.query(
-      'UPDATE transactions SET total_amount = $1 WHERE id = $2',
-      [total_amount, transaction.id]
+      'UPDATE transactions SET total_amount = $1, total_profit = $2 WHERE transaction_id = $3',
+      [total_amount, total_profit, transactionId]
     );
-    
+
     await client.query('COMMIT');
-    res.status(201).json({ ...transaction, total_amount });
-    
-  } catch (error) {
+    res.status(201).json({ message: 'Transaction completed successfully', transaction: newTransaction.rows[0] });
+
+  } catch (err) {
     await client.query('ROLLBACK');
-    res.status(500).json({ error: error.message });
+    console.error('Error processing transaction:', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Clear all transactions
+router.delete('/clear', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Delete from transaction_items (due to foreign key constraints)
+    await client.query('DELETE FROM transaction_items');
+    // Delete from stock_history (due to foreign key constraints)
+    await client.query('DELETE FROM stock_history');
+    // Delete from transactions
+    await client.query('DELETE FROM transactions');
+
+    await client.query('COMMIT');
+    res.status(200).json({ message: 'All transaction history cleared successfully' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error clearing transaction history:', err.message);
+    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }

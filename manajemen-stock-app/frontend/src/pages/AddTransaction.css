@@ -1,0 +1,231 @@
+.add-transaction-page {
+    background-color: #ffffff;
+    padding: 2rem; /* Consistent padding */
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    max-width: 700px; /* Increased max-width for wider form */
+    margin: 0 auto;
+}
+
+/* Removed @media (max-width: 480px) for .add-transaction-page padding */
+
+.add-transaction-title {
+    font-size: 2rem; /* 32px */
+    font-weight: 700;
+    background: linear-gradient(45deg, #2563eb, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1.5rem; /* 24px */
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) { /* Tablet */
+    .add-transaction-title {
+        font-size: 1.8rem; /* 10% reduction */
+    }
+}
+
+@media (max-width: 480px) { /* Mobile */
+    .add-transaction-title {
+        font-size: 1.6rem; /* 20% reduction */
+    }
+}
+
+.add-transaction-subtitle {
+    font-size: 0.875rem; /* 14px regular */
+    font-weight: 400;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.transaction-form .form-group {
+    margin-bottom: 1.25rem; /* 20px spacing */
+}
+
+.transaction-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem; /* 14px */
+}
+
+.transaction-form .form-input {
+    width: 100%;
+    height: 2.75rem; /* 44px height */
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem; /* 8px radius */
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.transaction-form .form-input::placeholder {
+    color: #9ca3af;
+}
+
+.transaction-form .form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* Blue shadow on focus */
+}
+
+.transaction-form .input-error {
+    border-color: #ef4444; /* Red border for error */
+}
+
+.transaction-form .error-message {
+    color: #ef4444;
+    font-size: 0.75rem; /* Smaller error message */
+    margin-top: 0.25rem;
+}
+
+.required-indicator {
+    color: #ef4444;
+    margin-left: 0.25rem;
+}
+
+/* Input with Icon Styling */
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon .form-input {
+    padding-left: 2.5rem; /* Make space for the icon */
+}
+
+.input-with-icon .input-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: #6b7280;
+    pointer-events: none; /* Allow clicks to pass through to input */
+    width: 1.25rem; /* 20px icon */
+    height: 1.25rem;
+}
+
+/* Quantity Input Group */
+.quantity-input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.quantity-input-group .form-input.quantity-input {
+    flex-grow: 1;
+    border: none;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    -moz-appearance: textfield;
+    height: 2.75rem; /* Match form-input height */
+}
+
+.quantity-input-group .form-input.quantity-input::-webkit-outer-spin-button,
+.quantity-input-group .form-input.quantity-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.quantity-button {
+    background-color: #f3f4f6;
+    border: none;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: #374151;
+    transition: background-color 0.2s ease-in-out;
+    height: 2.75rem; /* Match form-input height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quantity-button:hover {
+    background-color: #e5e7eb;
+}
+
+.quantity-button:active {
+    background-color: #d1d5db;
+}
+
+/* Radio Group */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    font-weight: 400;
+    font-size: 1rem;
+    color: #374151;
+}
+
+.radio-group input[type="radio"] {
+    margin-right: 0.5rem;
+    transform: scale(1.1); /* Slightly larger radio buttons */
+}
+
+/* Total Price Display */
+.total-price-display {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.total-price-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #28a745; /* Green for total price */
+    padding-left: 2.5rem; /* Align with icon input */
+}
+
+/* Submit Button */
+.transaction-form .submit-button {
+    width: 100%;
+    height: 3rem; /* 48px height */
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem; /* 8px radius */
+    border: none;
+    background: linear-gradient(45deg, #2563eb, #3b82f6); /* Gradient background */
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    margin-top: 2rem; /* More space above button */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.transaction-form .submit-button:hover {
+    background: linear-gradient(45deg, #1d4ed8, #2563eb); /* Darker gradient on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.transaction-form .submit-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #a0aec0; /* Gray out when disabled */
+}
+
+/* Spinner for loading state */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
