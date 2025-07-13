@@ -1,9 +1,10 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Package, DollarSign, ClipboardList, Minus, Plus, Loader, CheckCircle, XCircle } from 'lucide-react'; // Import icons
+import toast from 'react-hot-toast';
 import './ProductForm.css';
 
 const schema = yup.object().shape({
@@ -23,6 +24,16 @@ const ProductForm = ({ product, onSubmit, onClose }) => {
   const stockQuantity = watch('stock', 0);
   const minStockQuantity = watch('min_stock', 0);
 
+  // Auto save handler for Ctrl+S
+  const handleAutoSave = useCallback((data) => {
+    if (Object.keys(errors).length === 0) {
+      onSubmit(data);
+      toast.success('Product saved automatically!');
+    } else {
+      toast.error('Please fix form errors before saving');
+    }
+  }, [onSubmit, errors]);
+
   useEffect(() => {
     if (product) {
       reset(product);
@@ -30,6 +41,17 @@ const ProductForm = ({ product, onSubmit, onClose }) => {
       reset();
     }
   }, [product, reset]);
+
+  // Listen for hotkey save event
+  useEffect(() => {
+    const handleSaveEvent = () => {
+      const formData = watch();
+      handleAutoSave(formData);
+    };
+
+    document.addEventListener('hotkey-save', handleSaveEvent);
+    return () => document.removeEventListener('hotkey-save', handleSaveEvent);
+  }, [handleAutoSave, watch]);
 
   const handleFormSubmit = (data) => {
     onSubmit(data);

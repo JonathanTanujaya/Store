@@ -2,13 +2,27 @@
 import React from 'react';
 import { useReactTable, getCoreRowModel, flexRender, getPaginationRowModel, getSortedRowModel, getFilteredRowModel } from '@tanstack/react-table';
 import { useState } from 'react';
-import { useTransactions } from '../context/TransactionContext.jsx'; // Import useTransactions
+import { useTransactions } from '../context/TransactionContext.jsx';
+import { Eye } from 'lucide-react';
+import TransactionDetailModal from './TransactionDetailModal.jsx';
 import './TransactionTable.css';
 
 const TransactionTable = () => {
-  const { transactions, loading, error } = useTransactions(); // Use transactions from context
+  const { transactions, loading, error } = useTransactions();
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleViewTransaction = (transaction) => {
+    setSelectedTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTransaction(null);
+  };
 
   const columns = React.useMemo(
     () => [
@@ -44,10 +58,17 @@ const TransactionTable = () => {
       },
       {
         id: 'actions',
-        header: () => 'Actions',
-        cell: () => (
+        header: () => 'Aksi',
+        cell: (info) => (
           <div className="table-actions">
-            <button className="table-action-button view-button">View</button>
+            <button 
+              className="table-action-button view-button"
+              onClick={() => handleViewTransaction(info.row.original)}
+              title="Lihat Detail Transaksi"
+            >
+              <Eye size={16} />
+              <span>Lihat</span>
+            </button>
           </div>
         ),
       },
@@ -113,7 +134,10 @@ const TransactionTable = () => {
             table.getRowModel().rows.map(row => (
               <tr key={row.id}>
                 {row.getVisibleCells().map(cell => (
-                  <td key={cell.id}>
+                  <td 
+                    key={cell.id}
+                    data-label={cell.column.columnDef.header?.() || cell.column.id}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -186,6 +210,12 @@ const TransactionTable = () => {
           ))}
         </select>
       </div>
+
+      <TransactionDetailModal 
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        transaction={selectedTransaction}
+      />
     </div>
   );
 };

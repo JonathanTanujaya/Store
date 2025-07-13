@@ -12,6 +12,15 @@ export const ProductProvider = ({ children }) => {
 
   const API_URL = 'http://localhost:5000/api/products'; // Sesuaikan dengan URL backend Anda
 
+  // Realtime update dengan polling setiap 30 detik
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchProducts();
+    }, 30000); // Update setiap 30 detik
+
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);

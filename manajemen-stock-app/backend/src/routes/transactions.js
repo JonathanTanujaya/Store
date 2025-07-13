@@ -2,10 +2,44 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 
-// Get all transactions
+// Get all transactions (combined from sales and restock)
 router.get('/', async (req, res) => {
   try {
-    const allTransactions = await pool.query('SELECT * FROM transactions ORDER BY transaction_date DESC');
+    // Get sales transactions
+    const salesQuery = `
+      SELECT 
+        'SALE' as transaction_type,
+        sales_id as transaction_id,
+        customer_name,
+        total_amount,
+        total_profit,
+        transaction_date,
+        notes
+      FROM sales_transactions
+    `;
+    
+    // Get restock transactions
+    const restockQuery = `
+      SELECT 
+        'RESTOCK' as transaction_type,
+        restock_id as transaction_id,
+        supplier_name as customer_name,
+        total_cost as total_amount,
+        0 as total_profit,
+        restock_date as transaction_date,
+        notes
+      FROM restock_transactions
+    `;
+    
+    // Combine both queries
+    const combinedQuery = `
+      (${salesQuery})
+      UNION ALL
+      (${restockQuery})
+      ORDER BY transaction_date DESC
+    `;
+    
+    const allTransactions = await pool.query(combinedQuery);
     res.json(allTransactions.rows);
   } catch (err) {
     console.error(err.message);
@@ -13,93 +47,48 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Add a new transaction (multi-item support)
+// Legacy endpoint - redirect to appropriate endpoint
 router.post('/', async (req, res) => {
-  const client = await pool.connect();
   try {
-    const { transaction_type, customer_name, items } = req.body;
-    let total_amount = 0;
-    let total_profit = 0;
-
-    await client.query('BEGIN');
-
-    // 1. Insert into transactions table
-    const newTransaction = await client.query(
-      'INSERT INTO transactions (transaction_type, customer_name) VALUES($1, $2) RETURNING * ',
-      [transaction_type, customer_name]
-    );
-    const transactionId = newTransaction.rows[0].transaction_id;
-
-    // 2. Process each item in the transaction
-    for (const item of items) {
-      const { product_id, quantity } = item;
-
-      // Get product details (price, stock, etc.)
-      const product = await client.query('SELECT * FROM products WHERE id = $1', [product_id]);
-      if (product.rows.length === 0) {
-        throw new Error(`Product with ID ${product_id} not found.`);
-      }
-      const { stock_quantity, selling_price, purchase_price } = product.rows[0];
-
-      // Check stock for 'OUT' transactions
-      if (transaction_type === 'OUT' && stock_quantity < quantity) {
-        throw new Error(`Insufficient stock for product ${product.rows[0].name}. Available: ${stock_quantity}, Requested: ${quantity}`);
-      }
-
-      // Calculate item profit and amount
-      const itemProfit = (selling_price - purchase_price) * quantity;
-      const itemAmount = selling_price * quantity;
-
-      total_amount += itemAmount;
-      total_profit += itemProfit;
-
-      // Insert into transaction_items table
-      await client.query(
-        'INSERT INTO transaction_items (transaction_id, product_id, quantity, price_at_transaction, purchase_price_at_transaction, item_profit) VALUES($1, $2, $3, $4, $5, $6)',
-        [transactionId, product_id, quantity, selling_price, purchase_price, itemProfit]
-      );
-
-      // Update product stock
-      const newStockQuantity = transaction_type === 'IN' ? stock_quantity + quantity : stock_quantity - quantity;
-      await client.query('UPDATE products SET stock_quantity = $1 WHERE id = $2', [newStockQuantity, product_id]);
-
-      // Insert into stock_history
-      await client.query(
-        'INSERT INTO stock_history (product_id, change_type, quantity_change, new_stock, transaction_id) VALUES($1, $2, $3, $4, $5)',
-        [product_id, transaction_type, quantity, newStockQuantity, transactionId]
-      );
+    const { transaction_type } = req.body;
+    
+    if (transaction_type === 'OUT' || transaction_type === 'SALE') {
+      return res.status(400).json({ 
+        error: 'Please use /api/sales endpoint for sales transactions',
+        redirect: '/api/sales'
+      });
+    } else if (transaction_type === 'IN' || transaction_type === 'RESTOCK') {
+      return res.status(400).json({ 
+        error: 'Please use /api/restock endpoint for restock transactions',
+        redirect: '/api/restock'
+      });
+    } else {
+      return res.status(400).json({ 
+        error: 'Invalid transaction type. Use /api/sales or /api/restock endpoints'
+      });
     }
-
-    // 3. Update total_amount and total_profit in transactions table
-    await client.query(
-      'UPDATE transactions SET total_amount = $1, total_profit = $2 WHERE transaction_id = $3',
-      [total_amount, total_profit, transactionId]
-    );
-
-    await client.query('COMMIT');
-    res.status(201).json({ message: 'Transaction completed successfully', transaction: newTransaction.rows[0] });
-
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Error processing transaction:', err.message);
-    res.status(500).json({ error: err.message });
-  } finally {
-    client.release();
+    console.error(err.message);
+    res.status(500).send('Server Error');
   }
 });
 
-// Clear all transactions
+// Clear all transactions (both sales and restock)
 router.delete('/clear', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // Delete from transaction_items (due to foreign key constraints)
-    await client.query('DELETE FROM transaction_items');
-    // Delete from stock_history (due to foreign key constraints)
-    await client.query('DELETE FROM stock_history');
-    // Delete from transactions
-    await client.query('DELETE FROM transactions');
+    // Delete from sales_items and sales_transactions
+    await client.query('DELETE FROM sales_items');
+    await client.query('DELETE FROM sales_transactions');
+    
+    // Delete from restock_items and restock_transactions
+    await client.query('DELETE FROM restock_items');
+    await client.query('DELETE FROM restock_transactions');
+    
+    // Delete stock movements
+    await client.query('DELETE FROM stock_movements');
 
     await client.query('COMMIT');
     res.status(200).json({ message: 'All transaction history cleared successfully' });
